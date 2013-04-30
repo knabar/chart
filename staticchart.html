@@ -26752,6 +26752,7 @@ var  chartdata = [[[0,13],null,null,null,null,
    *  Generalized, optimized and (slightly) re-formatted.
    */
   function compressDatasets(datasets) {
+      var compressedDatasets = [];
       /* Init lookup table. */
       var isCompressed = [];
       for (var row = 0; row < MAX_ROWS; row++) {
@@ -26760,21 +26761,28 @@ var  chartdata = [[[0,13],null,null,null,null,
       
       /* Find the maximum across data sets. */
       var maxDatapoints = 0;
+      var maxValues = 0;
       for (var dataset = 0; dataset < datasets.length; dataset++) {
-        maxDatapoints = Math.max(maxDatapoints, datasets[dataset].length);
+        compressedDatasets.push([]);
+        for (var datapoint = 0, length = datasets[dataset].length; datapoint < length; datapoint++) {
+          tuple = datasets[dataset][datapoint];
+          if (tuple) {
+            maxDatapoints = Math.max(maxDatapoints, parseFloat(tuple[0]));
+            maxValues = Math.max(maxValues, parseFloat(tuple[1]));
+          }
+        }
       }
       
       /* Compress data points. */
-      var compressedDatasets = [], tuple, x, y;  
-      for (var dataset = 0; dataset < datasets.length; dataset++) {
-        compressedDatasets.push([]);
-        
+      var tuple, x, y;
+      // loop in reverse to match colors in full-size display better
+      for (var dataset = datasets.length - 1; dataset >= 0; dataset--) {
         for (var datapoint = 0, length = datasets[dataset].length; datapoint < length; datapoint++) {
           tuple = datasets[dataset][datapoint];
           if (tuple !== null) {
-            /* Scale x to fit within MAX_COLUMNS. */
-            x = tuple[0] * MAX_COLUMNS / maxDatapoints << 0;
-            y = tuple[1];
+            /* Scale x and y to fit within MAX_COLUMNS and MAX_ROWS. */
+            x = (tuple[0] * (MAX_COLUMNS - 1) / maxDatapoints) << 0;
+            y = (parseFloat(tuple[1]) * (MAX_ROWS - 1) / maxValues) << 0;
             if (!isCompressed[y][x]) {
                 isCompressed[y][x] = true;
                 compressedDatasets[dataset].push([x, y]);
